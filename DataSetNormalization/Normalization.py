@@ -1,9 +1,22 @@
 import csv
 import os
+from DataSetNormalization.DefsNormalization import DefsNormalization
 
-from DataSetNormalization.DefsNormalization import replaceInvalidArguments, removeExpendableAttribute, moveLastPositionInterestClass
-from DataSetNormalization.DefsNormalization import replaceAccentuationAndUpperCase, normalizeNORMALXANORMAL
-from DataSetNormalization.DefsNormalization import normalizeSEXO, normalizePESO, normalizeIDADE, normalizeIMC
+# Moldable Parameters for Data Normalization
+maxValueFC = 250
+minValueFC = 10
+maxValueIMC = 60.0
+minValueIMC = 1.0
+maxValueAge = 120
+minValueAge = 0
+maxValueWeight = 500.0
+minValueWeight = 0.1
+maxValueHeight = 350
+minValueHeight = 1
+removePAS = True  # Remove height and weight attributes pa's systolic and diastolic
+removeAlturaAndPeso = True  # Remove height and weight attributes from dataset
+missingValuesGenere = True  # Replaces the UNDEFINED genders with missing values
+maxValueToConversionHeight = 4
 
 # Directory containing the original dataset in csv UTF-8
 dataSetCSVDirectory = '../DataSet/'
@@ -26,15 +39,20 @@ with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
         readerCSV = csv.reader(csvReaderFile)
 
         for row in readerCSV:
-            line = replaceInvalidArguments(row)
-            line = replaceAccentuationAndUpperCase(line)
+            normalization = DefsNormalization(maxValueFC, minValueFC, maxValueIMC, minValueIMC, maxValueAge,
+                                              minValueAge, maxValueWeight, minValueWeight, maxValueHeight,
+                                              minValueHeight, removePAS, removeAlturaAndPeso, missingValuesGenere,
+                                              maxValueToConversionHeight)
 
-            line = normalizeNORMALXANORMAL(line)
-            line = normalizeSEXO(line)
-            line = normalizePESO(line)
-            line = normalizeIDADE(line)
-            line = normalizeIMC(line)
+            line = normalization.replaceInvalidInterestArguments(row)
+            line = normalization.replaceAccentuationAndUpperCase(line)
 
-            line = moveLastPositionInterestClass(line)
-            line = removeExpendableAttribute(line)
+            line = normalization.normalizeNORMALXANORMAL(line)
+            line = normalization.normalizeSEXO(line)
+            line = normalization.normalizeIDADE(line)
+            line = normalization.normalizeIMC(line)
+            line = normalization.normalizeFC(line)
+
+            line = normalization.moveLastPositionInterestClass(line)
+            line = normalization.removeExpendableAttribute(line)
             writerCSV.writerow(line)
