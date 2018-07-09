@@ -1,9 +1,10 @@
 import csv
 import os
-from DataSetNormalization.DefsNormalization import DefsNormalization, getAttributesDataSet
+from DataSetNormalization.DefsNormalization import DefsNormalization, getAttributesDataSet, getIndexAttributeClass
 
 # Moldable Parameters for Data Normalization
 
+# Max and min values for attributes
 maxValueFC = 200
 minValueFC = 40
 
@@ -39,8 +40,6 @@ attributesRemove.append(attributesDataSet['ALTURA'])
 attributesRemove.append(attributesDataSet['PESO'])
 attributesRemove.append(attributesDataSet['ID'])
 
-indexInterestClass = 4
-
 # Directory containing the original dataset in csv UTF-8
 dataSetCSVDirectory = '../DataSet/'
 
@@ -54,29 +53,63 @@ dataSetCSVOutput = dataSetCSVDirectory + 'DataSetNormalization.csv'
 if os.path.isfile(dataSetCSVOutput):
     os.remove(dataSetCSVOutput)
 
+# Document content CSV original processed
+processedDocument = []
+
 # Read Original DataSet exections functions normalization write DataSet Ouput
+normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
+                                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight,
+                                  attributesRemove, missingValuesGenere, maxValueToConversionHeight)
+
+# Processed document
+firstLine = True
+indexInterestClass = 0
+with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
+    readerCSV = csv.reader(csvReaderFile)
+
+    for row in readerCSV:
+        line = normalization.replaceInvalidInterestArguments(row)
+        line = normalization.replaceAccentuationAndUpperCase(line)
+
+        # pre precess data
+        line = normalization.processNORMALXANORMAL(line)
+        line = normalization.processSEXO(line)
+        line = normalization.processIDADE(line)
+        line = normalization.processIMC(line)
+        line = normalization.processFC(line)
+        line = normalization.processPPA(line)
+
+        line = normalization.removeExpendableAttribute(line)
+
+        if firstLine:
+            indexInterestClass = getIndexAttributeClass(line, 'NORMAL X ANORMAL')
+            firstLine = False
+
+        line = normalization.moveLastPositionClass(line, indexInterestClass)
+        processedDocument.append(line)
+
+#  Normalize attributes numerical and record document
+firstLine = True
+indexClassFC = 0
+indexClassIMC = 0
+indexClassIDADE = 0
 with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
     writerCSV = csv.writer(csvWriterFile)
 
-    with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
-        readerCSV = csv.reader(csvReaderFile)
+    for line in processedDocument:
+        if firstLine:
+            indexClassFC = getIndexAttributeClass(line, 'FC')
+            indexClassIMC = getIndexAttributeClass(line, 'IMC')
+            indexClassIDADE = getIndexAttributeClass(line, 'IDADE')
+            firstLine = False
+        else:
+            line = normalization.normalizeattribute(line, indexClassFC, normalization.minValueNormalizationFC,
+                                                    normalization.maxValueNormalizationFC)
 
-        for row in readerCSV:
-            normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC,
-                                              maxValueAge, minValueAge, maxValueWeight, minValueWeight, maxValueHeight,
-                                              minValueHeight, attributesRemove, missingValuesGenere,
-                                              maxValueToConversionHeight)
+            line = normalization.normalizeattribute(line, indexClassIMC, normalization.minValueNormalizationIMC,
+                                                    normalization.maxValueNormalizationIMC)
 
-            line = normalization.replaceInvalidInterestArguments(row)
-            line = normalization.replaceAccentuationAndUpperCase(line)
+            line = normalization.normalizeattribute(line, indexClassIDADE, normalization.minValueNormalizationIDADE,
+                                                    normalization.maxValueNormalizationIDADE)
 
-            line = normalization.normalizeNORMALXANORMAL(line)
-            line = normalization.normalizeSEXO(line)
-            line = normalization.normalizeIDADE(line)
-            line = normalization.normalizeIMC(line)
-            line = normalization.normalizeFC(line)
-            line = normalization.normalizePPA(line)
-
-            line = normalization.removeExpendableAttribute(line)
-            line = normalization.moveLastPositionInterestClass(line, indexInterestClass)
-            writerCSV.writerow(line)
+        writerCSV.writerow(line)

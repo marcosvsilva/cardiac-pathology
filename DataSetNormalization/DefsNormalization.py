@@ -15,6 +15,12 @@ def getAttributesDataSet():
     return attributesDataSet
 
 
+def getIndexAttributeClass(line, attribute):
+    for i in range(len(line)):
+        if line[i] == attribute:
+            return i
+
+
 def calculateAge(attendance, birthday):
     age = attendance.year - birthday.year
     monthVeri = attendance.month - birthday.month
@@ -42,6 +48,7 @@ def checkImc(imc, maxValueIMC, minValueIMC):
     else:
         return missingValue
 
+
 def checkPPA(ppa):
     ppaNew = missingValue
     if ppa != '':
@@ -62,31 +69,33 @@ def checkPPA(ppa):
 
     return ppaNew
 
-def replaceInvalidArguments(line):
+
+def replaceInvalidInterestArgumentsRecursive(line):
     if '#VALUE!' in line:
         index = line.index('#VALUE!')
         line[index] = missingValue
-        replaceInvalidArguments(line)
+        replaceInvalidInterestArgumentsRecursive(line)
 
     if ',' in line:
         index = line.index(',')
         line[index] = '.'
-        replaceInvalidArguments(line)
+        replaceInvalidInterestArgumentsRecursive(line)
 
     return line
 
 
-def moveLastPositionClass(line, position):
+def moveLastPositionClassRecursive(line, position):
     if position == line.__len__() - 1:
         return line
     else:
         aux = line[position]
         line[position] = line[position + 1]
         line[position + 1] = aux
-        return moveLastPositionClass(line, position + 1)
+        return moveLastPositionClassRecursive(line, position + 1)
 
 
 class DefsNormalization:
+    # values for processing
     maxValueFC = 0
     minValueFC = 0
     maxValuePA = 0
@@ -102,6 +111,14 @@ class DefsNormalization:
     attributesRemove = []
     missingValuesGenere = False
     maxValueToConversionHeight = 0
+
+    # values for normalization
+    maxValueNormalizationFC = 0
+    minValueNormalizationFC = 0
+    maxValueNormalizationIMC = 0
+    minValueNormalizationIMC = 0
+    maxValueNormalizationIDADE = 0
+    minValueNormalizationIDADE = 0
 
     def __init__(self, maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight, attributesRemove,
@@ -122,16 +139,21 @@ class DefsNormalization:
         self.missingValuesGenere = missingValuesGenere
         self.maxValueToConversionHeight = maxValueToConversionHeight
 
+        # Assigned minimum values with the maximum values so that they are always greater than the minimum values
+        self.minValueNormalizationFC = maxValueFC
+        self.minValueNormalizationIMC = maxValueIMC
+        self.minValueNormalizationIDADE = maxValueAge
+
     def removeExpendableAttribute(self, line):
         for index in self.attributesRemove:
             line.pop(index)
         return line
 
     def replaceInvalidInterestArguments(self, line):
-        return replaceInvalidArguments(line)
+        return replaceInvalidInterestArgumentsRecursive(line)
 
-    def moveLastPositionInterestClass(self, line, index):
-        return moveLastPositionClass(line, index)
+    def moveLastPositionClass(self, line, index):
+        return moveLastPositionClassRecursive(line, index)
 
     def replaceAccentuationAndUpperCase(self, line):
         for i in range(len(line)):
@@ -140,7 +162,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizeNORMALXANORMAL(self, line):
+    def processNORMALXANORMAL(self, line):
         if line[attributesDataSet['NORMALXANORMAL']] != 'NORMAL X ANORMAL':
             if line[attributesDataSet['NORMALXANORMAL']] in ('NORMAL', 'NORMAIS'):
                 line[attributesDataSet['NORMALXANORMAL']] = 'NORMAL'
@@ -153,7 +175,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizeSEXO(self, line):
+    def processSEXO(self, line):
         if line[attributesDataSet['SEXO']] != 'SEXO':
             if line[attributesDataSet['SEXO']] == missingValue:
                 line[attributesDataSet['SEXO']] = missingValue
@@ -172,7 +194,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizeIDADE(self, line):
+    def processIDADE(self, line):
         if line[attributesDataSet['IDADE']] != 'IDADE':
             try:
                 attendance = parser.parse(line[attributesDataSet['ATENDIMENTO']])
@@ -189,6 +211,12 @@ class DefsNormalization:
 
                 if age >= 0:
                     line[attributesDataSet['IDADE']] = age
+
+                    if age < self.minValueNormalizationIDADE:
+                        self.minValueNormalizationIDADE = age
+
+                    if age > self.maxValueNormalizationIDADE:
+                        self.maxValueNormalizationIDADE = age
                 else:
                     line[attributesDataSet['IDADE']] = missingValue
             else:
@@ -196,7 +224,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizePPA(self, line):
+    def processPPA(self, line):
         if line[attributesDataSet['PPA']] != 'PPA':
             try:
                 pas = int(line[attributesDataSet['PASISTOLICA']])
@@ -231,7 +259,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizePESO(self, line):
+    def processPESO(self, line):
         if line[attributesDataSet['PESO']] != 'PESO':
             if line[attributesDataSet['PESO']] == '':
                 line[attributesDataSet['PESO']] = missingValue
@@ -244,7 +272,7 @@ class DefsNormalization:
 
         return line
 
-    def normalizeALTURA(self, line):
+    def processALTURA(self, line):
         if line[attributesDataSet['ALTURA']] != 'ALTURA':
             if line[attributesDataSet['ALTURA']] == '':
                 line[attributesDataSet['ALTURA']] = missingValue
@@ -257,16 +285,17 @@ class DefsNormalization:
 
         return line
 
-    def normalizeIMC(self, line):
+    def processIMC(self, line):
+        imc = 0
         if line[attributesDataSet['IMC']] != 'IMC':
             try:
-                line = self.normalizeALTURA(line)
+                line = self.processALTURA(line)
                 height = float(line[attributesDataSet['ALTURA']])
             except ValueError:
                 height = 0
 
             try:
-                line = self.normalizePESO(line)
+                line = self.processPESO(line)
                 weight = float(line[attributesDataSet['PESO']])
             except ValueError:
                 weight = 0
@@ -276,15 +305,24 @@ class DefsNormalization:
                     height = height / convertHeightMTOCM
 
                 imc = weight / (height * height)
-                line[attributesDataSet['IMC']] = checkImc(imc, self.maxValueIMC, self.minValueIMC)
+                imc = checkImc(imc, self.maxValueIMC, self.minValueIMC)
+                line[attributesDataSet['IMC']] = imc
 
             elif line[attributesDataSet['IMC']] != missingValue:
-                line[attributesDataSet['IMC']] = checkImc(line[attributesDataSet['IMC']], self.maxValueIMC,
-                                                          self.minValueIMC)
+                imc = checkImc(line[attributesDataSet['IMC']], self.maxValueIMC, self.minValueIMC)
+                line[attributesDataSet['IMC']] = imc
+
+        if imc != missingValue:
+            if imc >= 0:
+                if imc < self.minValueNormalizationIMC:
+                    self.minValueNormalizationIMC = imc
+
+                if imc > self.maxValueNormalizationIMC:
+                    self.maxValueNormalizationIMC = imc
 
         return line
 
-    def normalizeFC(self, line):
+    def processFC(self, line):
         if line[attributesDataSet['FC']] != 'FC':
             if line[attributesDataSet['FC']] == '':
                 line[attributesDataSet['FC']] = missingValue
@@ -293,11 +331,27 @@ class DefsNormalization:
                     intFC = int(line[attributesDataSet['FC']])
 
                     if self.minValueFC < intFC <= self.maxValueFC:
-                        line[attributesDataSet['FC']] = int(line[attributesDataSet['FC']])
+                        line[attributesDataSet['FC']] = intFC
+
+                        if intFC < self.minValueNormalizationFC:
+                            self.minValueNormalizationFC = intFC
+
+                        if intFC > self.maxValueNormalizationFC:
+                            self.maxValueNormalizationFC = intFC
                     else:
                         line[attributesDataSet['FC']] = missingValue
 
                 except ValueError:
                     line[attributesDataSet['FC']] = missingValue
 
+        return line
+
+    def normalizeattribute(self, line, indexAttribute, minAttribute, maxAttribute):
+        valueAttribute = line[indexAttribute]
+
+        if valueAttribute != missingValue:
+            minAttribute = float(minAttribute)
+            maxAttribute = float(maxAttribute)
+            valueAttribute = float(valueAttribute)
+            line[indexAttribute] = round((valueAttribute - minAttribute) / (maxAttribute - minAttribute), 4)
         return line
