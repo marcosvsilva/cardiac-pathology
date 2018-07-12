@@ -240,22 +240,29 @@ class DefsNormalization:
             maxPA = int(self.maxValuePA)
 
             line[attributesDataSet['PPA']] = checkPPA(line[attributesDataSet['PPA']])
-            if minPA < pas <= maxPA:
-                if minPA < pad <= maxPA:
-                    if pas <= 120 and pad <= 80:
-                        line[attributesDataSet['PPA']] = 'NORMAL'
 
-                    if 120 < pas < 140 or 80 < pad < 90:
-                        line[attributesDataSet['PPA']] = 'PRE-HIPERTENSAO'
+            #validation calcule PPA
+            '''
+            if line[attributesDataSet['PPA']] == missingValue:
+                if line[attributesDataSet['IDADE']] != missingValue:
+                    if line[attributesDataSet['IDADE']] >= 18:
+                            if minPA < pas <= maxPA:
+                                if minPA < pad <= maxPA:
+                                    if pas <= 120 and pad <= 80:
+                                        line[attributesDataSet['PPA']] = 'NORMAL'
 
-                    if 140 <= pas < 160 or 90 <= pad < 100:
-                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 1'
+                                    if 120 < pas < 140 or 80 < pad < 90:
+                                        line[attributesDataSet['PPA']] = 'PRE-HIPERTENSAO'
 
-                    if 160 <= pas < 180 or 100 <= pad < 110:
-                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 2'
+                                    if 140 <= pas < 160 or 90 <= pad < 100:
+                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 1'
 
-                    if pas >= 180 or pad >= 110:
-                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 3'
+                                    if 160 <= pas < 180 or 100 <= pad < 110:
+                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 2'
+
+                                    if pas >= 180 or pad >= 110:
+                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 3'
+            '''
 
         return line
 
