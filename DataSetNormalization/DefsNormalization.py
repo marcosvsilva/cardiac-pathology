@@ -22,31 +22,41 @@ def getIndexAttributeClass(line, attribute):
 
 
 def calculateAge(attendance, birthday):
-    age = attendance.year - birthday.year
-    monthVeri = attendance.month - birthday.month
-    dateVeri = attendance.day - birthday.day
+    age = -1
+    try:
+        age = attendance.year - birthday.year
+        monthVeri = attendance.month - birthday.month
+        dateVeri = attendance.day - birthday.day
 
-    age = int(age)
-    monthVeri = int(monthVeri)
-    dateVeri = int(dateVeri)
+        age = int(age)
+        monthVeri = int(monthVeri)
+        dateVeri = int(dateVeri)
 
-    if monthVeri < 0:
-        age = age - 1
-    elif dateVeri < 0 and monthVeri == 0:
-        age = age - 1
+        if monthVeri < 0:
+            age = age - 1
+        elif dateVeri < 0 and monthVeri == 0:
+            age = age - 1
+    except ValueError:
+        age = -1
 
     return age
 
 
 def checkImc(imc, maxValueIMC, minValueIMC):
-    imc = float(imc)
-    maxValue = float(maxValueIMC)
-    minValue = float(minValueIMC)
+    try:
+        imc = float(imc)
+        maxValue = float(maxValueIMC)
+        minValue = float(minValueIMC)
 
-    if minValue < imc <= maxValue:
-        return round(imc, 2)
-    else:
-        return missingValue
+        if minValue <= imc <= maxValue:
+            imc = round(imc, 2)
+        else:
+            imc = -1
+
+    except ValueError:
+        imc = -1
+
+    return imc
 
 
 def checkPPA(ppa):
@@ -55,17 +65,24 @@ def checkPPA(ppa):
         if ppa in ['NORMAL']:
             ppaNew = 'NORMAL'
 
-        if ppa in ['PRE-HIPERTENSAO PAS', 'PRE-HIPERTENSAO PAD']:
-            ppaNew = 'PRE-HIPERTENSAO'
+        if ppa in ['PRE-HIPERTENSAO PAS', 'PRE-HIPERTENSAO PAD', 'HAS-1 PAS', 'HAS-1 PAD', 'HAS-3 PAS', 'HAS-3 PAD']:
+            ppaNew = 'HAS'
 
-        if ppa in ['HAS-1 PAS', 'HAS-1 PAD']:
-            ppaNew = 'HIPERTENSAO ESTAGIO 1'
+    return ppaNew
 
-        if ppa in ['HAS-2 PAS', 'HAS-2 PAD']:
-            ppaNew = 'HIPERTENSAO ESTAGIO 2'
 
-        if ppa in ['HAS-3 PAS', 'HAS-3 PAD']:
-            ppaNew = 'HIPERTENSAO ESTAGIO 3'
+def calculeOneYearPPA(pas, pad, height, genere):
+    pas = int(pas)
+    pad = int(pad)
+    height = int(height)
+    male = (genere == 'MASCULINO')
+
+    ppaNew = missingValue
+    if male:
+        if pas > 0 and pad > 0:
+            if 5 <= height < 10:
+                if pa < 80:
+                    ppaNew = 'HIPOTENSAO'
 
     return ppaNew
 
@@ -119,6 +136,8 @@ class DefsNormalization:
     minValueNormalizationIMC = 0
     maxValueNormalizationIDADE = 0
     minValueNormalizationIDADE = 0
+    maxValueNormalizationALTURA = 0
+    minValueNormalizationALTURA = 0
 
     def __init__(self, maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight, attributesRemove,
@@ -143,6 +162,7 @@ class DefsNormalization:
         self.minValueNormalizationFC = maxValueFC
         self.minValueNormalizationIMC = maxValueIMC
         self.minValueNormalizationIDADE = maxValueAge
+        self.minValueNormalizationALTURA = maxValueHeight
 
     def removeExpendableAttribute(self, line):
         for index in self.attributesRemove:
@@ -154,13 +174,6 @@ class DefsNormalization:
 
     def moveLastPositionClass(self, line, index):
         return moveLastPositionClassRecursive(line, index)
-
-    def replaceAccentuationAndUpperCase(self, line):
-        for i in range(len(line)):
-            line[i] = normalize('NFKD', line[i]).encode('ASCII', 'ignore').decode('ASCII')
-            line[i] = line[i].upper()
-
-        return line
 
     def processNORMALXANORMAL(self, line):
         if line[attributesDataSet['NORMALXANORMAL']] != 'NORMAL X ANORMAL':
@@ -175,12 +188,16 @@ class DefsNormalization:
 
         return line
 
+    def replaceAccentuationAndUpperCase(self, line):
+        for i in range(len(line)):
+            line[i] = normalize('NFKD', line[i]).encode('ASCII', 'ignore').decode('ASCII')
+            line[i] = line[i].upper()
+
+        return line
+
     def processSEXO(self, line):
         if line[attributesDataSet['SEXO']] != 'SEXO':
-            if line[attributesDataSet['SEXO']] == missingValue:
-                line[attributesDataSet['SEXO']] = missingValue
-
-            elif line[attributesDataSet['SEXO']] in ('M', 'MASCULINO'):
+            if line[attributesDataSet['SEXO']] in ('M', 'MASCULINO'):
                 line[attributesDataSet['SEXO']] = 'MASCULINO'
 
             elif line[attributesDataSet['SEXO']] in ('F', 'FEMININO'):
@@ -209,7 +226,7 @@ class DefsNormalization:
             if (attendance is not None) and (birthday is not None):
                 age = calculateAge(attendance, birthday)
 
-                if age >= 0:
+                if self.minValueAge <= age <= self.maxValueAge:
                     line[attributesDataSet['IDADE']] = age
 
                     if age < self.minValueNormalizationIDADE:
@@ -224,76 +241,85 @@ class DefsNormalization:
 
         return line
 
-    def processPPA(self, line):
-        if line[attributesDataSet['PPA']] != 'PPA':
+    def processPAS(self, line):
+        if line[attributesDataSet['PASISTOLICA']] != 'PA SISTOLICA':
             try:
                 pas = int(line[attributesDataSet['PASISTOLICA']])
             except ValueError:
                 pas = 0
 
+            if self.minValuePA <= pas < self.maxValuePA:
+                line[attributesDataSet['PASISTOLICA']] = pas
+            else:
+                line[attributesDataSet['PASISTOLICA']] = missingValue
+
+        return line
+
+    def processPAD(self, line):
+        if line[attributesDataSet['PADIASTOLICA']] != 'PA DIASTOLICA':
             try:
                 pad = int(line[attributesDataSet['PADIASTOLICA']])
             except ValueError:
                 pad = 0
 
-            minPA = int(self.minValuePA)
-            maxPA = int(self.maxValuePA)
+            if self.minValuePA <= pad < self.maxValuePA:
+                line[attributesDataSet['PADIASTOLICA']] = pad
+            else:
+                line[attributesDataSet['PADIASTOLICA']] = missingValue
+
+        return line
+
+    def processPPA(self, line):
+        if line[attributesDataSet['PPA']] != 'PPA':
+            line = self.processPAD(line)
+            line = self.processPAS(line)
 
             line[attributesDataSet['PPA']] = checkPPA(line[attributesDataSet['PPA']])
-
-            #validation calcule PPA
-            '''
-            if line[attributesDataSet['PPA']] == missingValue:
-                if line[attributesDataSet['IDADE']] != missingValue:
-                    if line[attributesDataSet['IDADE']] >= 18:
-                            if minPA < pas <= maxPA:
-                                if minPA < pad <= maxPA:
-                                    if pas <= 120 and pad <= 80:
-                                        line[attributesDataSet['PPA']] = 'NORMAL'
-
-                                    if 120 < pas < 140 or 80 < pad < 90:
-                                        line[attributesDataSet['PPA']] = 'PRE-HIPERTENSAO'
-
-                                    if 140 <= pas < 160 or 90 <= pad < 100:
-                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 1'
-
-                                    if 160 <= pas < 180 or 100 <= pad < 110:
-                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 2'
-
-                                    if pas >= 180 or pad >= 110:
-                                        line[attributesDataSet['PPA']] = 'HIPERTENSAO ESTAGIO 3'
-            '''
-
         return line
 
     def processPESO(self, line):
         if line[attributesDataSet['PESO']] != 'PESO':
-            if line[attributesDataSet['PESO']] == '':
-                line[attributesDataSet['PESO']] = missingValue
+            if line[attributesDataSet['PESO']] != missingValue:
+                try:
+                    weight = float(line[attributesDataSet['PESO']])
 
-            elif float(line[attributesDataSet['PESO']]) <= self.minValueWeight:
-                line[attributesDataSet['PESO']] = missingValue
+                    if self.minValueWeight <= weight <= self.maxValueWeight:
+                        line[attributesDataSet['PESO']] = weight
+                    else:
+                        line[attributesDataSet['PESO']] = missingValue
 
-            elif float(line[attributesDataSet['PESO']]) > self.maxValueWeight:
-                line[attributesDataSet['PESO']] = missingValue
+                except ValueError:
+                    line[attributesDataSet['PESO']] = missingValue
 
         return line
 
     def processALTURA(self, line):
         if line[attributesDataSet['ALTURA']] != 'ALTURA':
-            if line[attributesDataSet['ALTURA']] == '':
-                line[attributesDataSet['ALTURA']] = missingValue
+            height = 0
+            try:
+                if line[attributesDataSet['ALTURA']] != '':
+                    heightAux = int(line[attributesDataSet['ALTURA']])
 
-            elif float(line[attributesDataSet['ALTURA']]) <= self.minValueHeight:
-                line[attributesDataSet['ALTURA']] = missingValue
+                    if self.minValueHeight <= heightAux <= self.maxValueHeight:
+                        height = heightAux
+                        line[attributesDataSet['ALTURA']] = height
+                    else:
+                        line[attributesDataSet['ALTURA']] = missingValue
 
-            elif float(line[attributesDataSet['ALTURA']]) > self.maxValueHeight:
+            except ValueError:
                 line[attributesDataSet['ALTURA']] = missingValue
+                height = 0
+
+            if height > 0:
+                if height < self.minValueNormalizationALTURA:
+                    self.minValueNormalizationALTURA = height
+
+                if height > self.maxValueNormalizationALTURA:
+                    self.maxValueNormalizationALTURA = height
 
         return line
 
     def processIMC(self, line):
-        imc = 0
         if line[attributesDataSet['IMC']] != 'IMC':
             try:
                 line = self.processALTURA(line)
@@ -307,20 +333,28 @@ class DefsNormalization:
             except ValueError:
                 weight = 0
 
+            imc = -1
             if (height > 0) and (weight > 0):
                 if height > self.maxValueToConversionHeight:
                     height = height / convertHeightMTOCM
 
                 imc = weight / (height * height)
                 imc = checkImc(imc, self.maxValueIMC, self.minValueIMC)
-                line[attributesDataSet['IMC']] = imc
+
+                if imc > 0:
+                    line[attributesDataSet['IMC']] = imc
+                else:
+                    line[attributesDataSet['IMC']] = missingValue
 
             elif line[attributesDataSet['IMC']] != missingValue:
                 imc = checkImc(line[attributesDataSet['IMC']], self.maxValueIMC, self.minValueIMC)
-                line[attributesDataSet['IMC']] = imc
 
-        if imc != missingValue:
-            if imc >= 0:
+                if imc > 0:
+                    line[attributesDataSet['IMC']] = imc
+                else:
+                    line[attributesDataSet['IMC']] = missingValue
+
+            if imc > 0:
                 if imc < self.minValueNormalizationIMC:
                     self.minValueNormalizationIMC = imc
 
@@ -331,13 +365,11 @@ class DefsNormalization:
 
     def processFC(self, line):
         if line[attributesDataSet['FC']] != 'FC':
-            if line[attributesDataSet['FC']] == '':
-                line[attributesDataSet['FC']] = missingValue
-            else:
+            if line[attributesDataSet['FC']] != '':
                 try:
                     intFC = int(line[attributesDataSet['FC']])
 
-                    if self.minValueFC < intFC <= self.maxValueFC:
+                    if self.minValueFC <= intFC <= self.maxValueFC:
                         line[attributesDataSet['FC']] = intFC
 
                         if intFC < self.minValueNormalizationFC:
