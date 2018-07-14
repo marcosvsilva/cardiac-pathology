@@ -11,6 +11,7 @@ convertHeightMTOCM = 100
 
 missingValue = ''
 
+
 def getAttributesDataSet():
     return attributesDataSet
 
@@ -74,22 +75,6 @@ def checkPPA(ppa):
     return ppaNew
 
 
-def calculeOneYearPPA(pas, pad, height, genere):
-    pas = int(pas)
-    pad = int(pad)
-    height = int(height)
-    male = (genere == 'MASCULINO')
-
-    ppaNew = missingValue
-    if male:
-        if pas > 0 and pad > 0:
-            if 5 <= height < 10:
-                if pa < 80:
-                    ppaNew = 'HIPOTENSAO'
-
-    return ppaNew
-
-
 def replaceInvalidInterestArgumentsRecursive(line):
     if '#VALUE!' in line:
         index = line.index('#VALUE!')
@@ -133,16 +118,6 @@ class DefsNormalization:
     maxValueToConversionHeight = 0
     removeAttributeAgeOutOfRange = False
 
-    # values for normalization
-    maxValueNormalizationFC = 0
-    minValueNormalizationFC = 0
-    maxValueNormalizationIMC = 0
-    minValueNormalizationIMC = 0
-    maxValueNormalizationIDADE = 0
-    minValueNormalizationIDADE = 0
-    maxValueNormalizationALTURA = 0
-    minValueNormalizationALTURA = 0
-
     # class of normalization PPA
     normalizationPPA = None
 
@@ -165,12 +140,6 @@ class DefsNormalization:
         self.missingValuesGenere = missingValuesGenere
         self.maxValueToConversionHeight = maxValueToConversionHeight
         self.removeAttributeAgeOutOfRange = removeAttributeAgeOutOfRange
-
-        # Assigned minimum values with the maximum values so that they are always greater than the minimum values
-        self.minValueNormalizationFC = maxValueFC
-        self.minValueNormalizationIMC = maxValueIMC
-        self.minValueNormalizationIDADE = maxValueAge
-        self.minValueNormalizationALTURA = maxValueHeight
 
         # class of normalization PPA
         self.normalizationPPA = DefsNormalizationPPA(minValuePA, minValuePA)
@@ -239,12 +208,6 @@ class DefsNormalization:
 
                 if self.minValueAge <= age <= self.maxValueAge:
                     line[attributesDataSet['IDADE']] = age
-
-                    if age < self.minValueNormalizationIDADE:
-                        self.minValueNormalizationIDADE = age
-
-                    if age > self.maxValueNormalizationIDADE:
-                        self.maxValueNormalizationIDADE = age
                 else:
                     line[attributesDataSet['IDADE']] = missingValue
             else:
@@ -344,13 +307,6 @@ class DefsNormalization:
                 line[attributesDataSet['ALTURA']] = missingValue
                 height = 0
 
-            if height > 0:
-                if height < self.minValueNormalizationALTURA:
-                    self.minValueNormalizationALTURA = height
-
-                if height > self.maxValueNormalizationALTURA:
-                    self.maxValueNormalizationALTURA = height
-
         return line
 
     def processIMC(self, line):
@@ -388,13 +344,6 @@ class DefsNormalization:
                 else:
                     line[attributesDataSet['IMC']] = missingValue
 
-            if imc > 0:
-                if imc < self.minValueNormalizationIMC:
-                    self.minValueNormalizationIMC = imc
-
-                if imc > self.maxValueNormalizationIMC:
-                    self.maxValueNormalizationIMC = imc
-
         return line
 
     def processFC(self, line):
@@ -405,12 +354,6 @@ class DefsNormalization:
 
                     if self.minValueFC <= intFC <= self.maxValueFC:
                         line[attributesDataSet['FC']] = intFC
-
-                        if intFC < self.minValueNormalizationFC:
-                            self.minValueNormalizationFC = intFC
-
-                        if intFC > self.maxValueNormalizationFC:
-                            self.maxValueNormalizationFC = intFC
                     else:
                         line[attributesDataSet['FC']] = missingValue
 
@@ -435,16 +378,6 @@ class DefsNormalization:
                         line[indexAttributeMOTIVO1] = 'OUTRO'
 
         line.pop(indexAttributeMOTIVO2)
-        return line
-
-    def normalizeattribute(self, line, indexAttribute, minAttribute, maxAttribute):
-        valueAttribute = line[indexAttribute]
-
-        if valueAttribute != missingValue:
-            minAttribute = float(minAttribute)
-            maxAttribute = float(maxAttribute)
-            valueAttribute = float(valueAttribute)
-            line[indexAttribute] = round((valueAttribute - minAttribute) / (maxAttribute - minAttribute), 4)
         return line
 
     def validAgeValid(self, line):

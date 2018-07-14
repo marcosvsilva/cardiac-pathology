@@ -5,11 +5,11 @@ from DataSetNormalization.DefsNormalization import DefsNormalization, getAttribu
 # Moldable Parameters for Data Normalization
 
 # Max and min values for attributes
-maxValueFC = 200
+maxValueFC = 250
 minValueFC = 40
 
-maxValuePA = 900
-minValuePA = 0
+maxValuePA = 250
+minValuePA = 40
 
 maxValueIMC = 60.0
 minValueIMC = 1.0
@@ -27,9 +27,9 @@ classDiscretizePESO = [[0, 35], [35, 70], [70, 105], [105, 140], [140, 175]]
 classDiscretizeALTURA = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
 classDiscretizeIMC = [[0, 12], [12, 24], [24, 36], [36, 48], [48, 60]]
 classDiscretizeIDADE = [[0, 4], [4, 8], [8, 12], [12, 16], [16, 20]]
-classDiscretizePAS = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
-classDiscretizePAD = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
-classDiscretizeFC = [[0, 45], [45, 90], [90, 135], [135, 180], [180, 225]]
+classDiscretizePAS = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
+classDiscretizePAD = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
+classDiscretizeFC = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
 
 attributesRemove = []  # Remove attributes unnecessary from dataset
 missingValuesGenere = True  # Replaces the UNDEFINED genders with missing values
@@ -40,21 +40,16 @@ removeAttributeAgeOutOfRange = True  # Removes any record that has the age outsi
 attributesDataSet = getAttributesDataSet()
 
 attributesRemove.append(attributesDataSet['HDA2'])
-# attributesRemove.append(attributesDataSet['PADIASTOLICA'])
-# attributesRemove.append(attributesDataSet['PASISTOLICA'])
 attributesRemove.append(attributesDataSet['CONVERNIO'])
 attributesRemove.append(attributesDataSet['ANIVERSARIO'])
 attributesRemove.append(attributesDataSet['ATENDIMENTO'])
-# attributesRemove.append(attributesDataSet['ALTURA'])
-# attributesRemove.append(attributesDataSet['IMC'])
-# attributesRemove.append(attributesDataSet['PESO'])
 attributesRemove.append(attributesDataSet['ID'])
 
 # Directory containing the original dataset in csv UTF-8
 dataSetCSVDirectory = '../DataSet/'
 
 # Original dataset in csv UTF-8
-dataSetCSVInput = dataSetCSVDirectory + 'DataSet.csv'
+dataSetCSVInput = dataSetCSVDirectory + 'DataSetOriginal.csv'
 
 # Normalized dataset output
 dataSetCSVOutput = dataSetCSVDirectory + 'DataSetNormalization.csv'
@@ -80,7 +75,6 @@ with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
     readerCSV = csv.reader(csvReaderFile)
 
     for row in readerCSV:
-
         if row[attributesDataSet['NORMALXANORMAL']] != '':
             line = normalization.replaceInvalidInterestArguments(row)
             line = normalization.replaceAccentuationAndUpperCase(line)
@@ -107,7 +101,7 @@ with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
                 line = normalization.moveLastPositionClass(line, indexInterestClass)
                 processedDocument.append(line)
 
-#  Discretize, normalize and merge attributes
+#  Discretize, and merge attributes
 firstLine = True
 indexClassPESO = -1
 indexClassALTURA = -1
@@ -146,10 +140,5 @@ with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
             line = normalization.discretizeAtribute(line, indexClassFC, classDiscretizeFC)
 
             line = normalization.mergeMOTIVOS(line, indexClassMOTIVO1, indexClassMOTIVO2)
-
-            '''
-            line = normalization.normalizeattribute(line, indexClassFC, normalization.minValueNormalizationFC,
-                                                    normalization.maxValueNormalizationFC)                                                            
-            '''
 
         writerCSV.writerow(line)

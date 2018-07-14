@@ -10,6 +10,8 @@ indexValueHeight = 'HEIGHT'
 indexValuePPA = 'PPA'
 indexValuePPD = 'PPD'
 
+intervalPercentil = [[0, 5], [5, 10], [10, 25], [25, 50], [50, 75], [75, 90]]
+
 
 def createValue(height, valueMinPPA, valueMinPPD, valuePPA, valuePPD):
     value = None
@@ -33,28 +35,21 @@ def classify(value, maxPAS, maxPAD):
 
 def classifyPPA(value, intervalMaxPAS, intervalMaxPAD):
     result = missingValue
-    index = -1;
+    index = -1
+    count = 0
+    max = 0
 
-    if value[indexValueHeight] <= 5:
-        index = 0
+    for interval in intervalPercentil:
+        min = interval[0]
+        max = interval[1]
 
-    if 5 < value[indexValueHeight] <= 10:
-        index = 1
+        if min < value[indexValueHeight] <= max:
+            index = count
 
-    if 10 < value[indexValueHeight] <= 25:
-        index = 2
+        count += 1
 
-    if 25 < value[indexValueHeight] <= 50:
-        index = 3
-
-    if 50 < value[indexValueHeight] <= 75:
-        index = 4
-
-    if 75 < value[indexValueHeight] <= 90:
-        index = 5
-
-    if value[indexValueHeight] > 90:
-        index = 6
+    if value[indexValueHeight] > max:
+        index = count
 
     if index >= 0:
         result = classify(value, intervalMaxPAS[index], intervalMaxPAD[index])
