@@ -16,9 +16,12 @@ def getAttributesDataSet():
 
 
 def getIndexAttributeClass(line, attribute):
+    index = -1
     for i in range(len(line)):
         if line[i] == attribute:
-            return i
+            index = i
+            break
+    return index
 
 
 def calculateAge(attendance, birthday):
@@ -128,6 +131,7 @@ class DefsNormalization:
     attributesRemove = []
     missingValuesGenere = False
     maxValueToConversionHeight = 0
+    removeAttributeAgeOutOfRange = False
 
     # values for normalization
     maxValueNormalizationFC = 0
@@ -141,7 +145,7 @@ class DefsNormalization:
 
     def __init__(self, maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight, attributesRemove,
-                 missingValuesGenere, maxValueToConversionHeight):
+                 missingValuesGenere, maxValueToConversionHeight, removeAttributeAgeOutOfRange):
         self.maxValueFC = maxValueFC
         self.minValueFC = minValueFC
         self.maxValuePA = maxValuePA
@@ -157,6 +161,7 @@ class DefsNormalization:
         self.attributesRemove = attributesRemove
         self.missingValuesGenere = missingValuesGenere
         self.maxValueToConversionHeight = maxValueToConversionHeight
+        self.removeAttributeAgeOutOfRange = removeAttributeAgeOutOfRange
 
         # Assigned minimum values with the maximum values so that they are always greater than the minimum values
         self.minValueNormalizationFC = maxValueFC
@@ -394,3 +399,27 @@ class DefsNormalization:
             valueAttribute = float(valueAttribute)
             line[indexAttribute] = round((valueAttribute - minAttribute) / (maxAttribute - minAttribute), 4)
         return line
+
+    def validAgeValid(self, line):
+        result = True
+        if self.removeAttributeAgeOutOfRange:
+            if line[attributesDataSet['IDADE']] != 'IDADE':
+                result = not (line[attributesDataSet['IDADE']] == missingValue)
+        return result
+
+    def discretizeAtribute(self, line, indexAttribute, interval):
+        try:
+            if indexAttribute >= 0:
+                if line[indexAttribute] != '':
+                    value = float(line[indexAttribute])
+
+                    for valuesInterval in interval:
+                        minValue = float(valuesInterval[0])
+                        maxValue = float(valuesInterval[1])
+
+                        if minValue <= value < maxValue:
+                            line[indexAttribute] = 'Class[' + str(valuesInterval[0]) + ',' + str(valuesInterval[1]) + ')'
+
+            return line
+        except ValueError:
+            line = 'FAIL OF DISCRETIZE INDEX ' + indexAttribute

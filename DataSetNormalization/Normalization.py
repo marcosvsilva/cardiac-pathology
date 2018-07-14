@@ -15,13 +15,21 @@ maxValueIMC = 60.0
 minValueIMC = 1.0
 
 maxValueAge = 18
-minValueAge = -1
+minValueAge = 0
 
 maxValueWeight = 500.0
 minValueWeight = 0.1
 
 maxValueHeight = 350
 minValueHeight = 1
+
+classDiscretizePESO = [[0, 35], [35, 70], [70, 105], [105, 140], [140, 175]]
+classDiscretizeALTURA = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
+classDiscretizeIMC = [[0, 12], [12, 24], [24, 36], [36, 48], [48, 60]]
+classDiscretizeIDADE = [[0, 4], [4, 8], [8, 12], [12, 16], [16, 20]]
+classDiscretizePAS = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
+classDiscretizePAD = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
+classDiscretizeFC = [[0, 45], [45, 90], [90, 135], [135, 180], [180, 225]]
 
 attributesRemove = []  # Remove attributes unnecessary from dataset
 missingValuesGenere = True  # Replaces the UNDEFINED genders with missing values
@@ -32,14 +40,14 @@ removeAttributeAgeOutOfRange = True  # Removes any record that has the age outsi
 attributesDataSet = getAttributesDataSet()
 
 attributesRemove.append(attributesDataSet['HDA2'])
-#attributesRemove.append(attributesDataSet['PADIASTOLICA'])
-#attributesRemove.append(attributesDataSet['PASISTOLICA'])
+# attributesRemove.append(attributesDataSet['PADIASTOLICA'])
+# attributesRemove.append(attributesDataSet['PASISTOLICA'])
 attributesRemove.append(attributesDataSet['CONVERNIO'])
 attributesRemove.append(attributesDataSet['ANIVERSARIO'])
 attributesRemove.append(attributesDataSet['ATENDIMENTO'])
-#attributesRemove.append(attributesDataSet['ALTURA'])
-#attributesRemove.append(attributesDataSet['IMC'])
-#attributesRemove.append(attributesDataSet['PESO'])
+# attributesRemove.append(attributesDataSet['ALTURA'])
+# attributesRemove.append(attributesDataSet['IMC'])
+# attributesRemove.append(attributesDataSet['PESO'])
 attributesRemove.append(attributesDataSet['ID'])
 
 # Directory containing the original dataset in csv UTF-8
@@ -61,7 +69,8 @@ processedDocument = []
 # Read Original DataSet exections functions normalization write DataSet Ouput
 normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
                                   minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight,
-                                  attributesRemove, missingValuesGenere, maxValueToConversionHeight)
+                                  attributesRemove, missingValuesGenere, maxValueToConversionHeight,
+                                  removeAttributeAgeOutOfRange)
 
 # Processed document
 firstLine = True
@@ -86,49 +95,50 @@ with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
                 line = normalization.processPAD(line)
                 line = normalization.processPPA(line)
 
-            line = normalization.removeExpendableAttribute(line)
-            if firstLine:
-                indexInterestClass = getIndexAttributeClass(line, 'NORMAL X ANORMAL')
-                firstLine = False
+            if normalization.validAgeValid(line):
+                line = normalization.removeExpendableAttribute(line)
 
-            line = normalization.moveLastPositionClass(line, indexInterestClass)
-            processedDocument.append(line)
+                if firstLine:
+                    indexInterestClass = getIndexAttributeClass(line, 'NORMAL X ANORMAL')
+                    firstLine = False
+
+                line = normalization.moveLastPositionClass(line, indexInterestClass)
+                processedDocument.append(line)
 
 #  Process and normalize attributes
 firstLine = True
-indexClassFC = 0
-indexClassIMC = 0
-indexClassIDADE = 0
-indexClassALTURA = 0
+indexClassPESO = -1
+indexClassALTURA = -1
+indexClassIMC = -1
+indexClassIDADE = -1
+indexClassPAS = -1
+indexClassPAD = -1
+indexClassFC = -1
 with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
     writerCSV = csv.writer(csvWriterFile)
 
     for line in processedDocument:
         if firstLine:
-            indexClassFC = getIndexAttributeClass(line, 'FC')
+            indexClassPESO = getIndexAttributeClass(line, 'PESO')
+            indexClassALTURA = getIndexAttributeClass(line, 'ALTURA')
             indexClassIMC = getIndexAttributeClass(line, 'IMC')
             indexClassIDADE = getIndexAttributeClass(line, 'IDADE')
-            indexClassALTURA = getIndexAttributeClass(line, 'ALTURA')
-            writerCSV.writerow(line)
+            indexClassPAS = getIndexAttributeClass(line, 'PA SISTOLICA')
+            indexClassPAD = getIndexAttributeClass(line, 'PA DIASTOLICA')
+            indexClassFC = getIndexAttributeClass(line, 'FC')
             firstLine = False
         else:
+            line = normalization.discretizeAtribute(line, indexClassPESO, classDiscretizePESO)
+            line = normalization.discretizeAtribute(line, indexClassALTURA, classDiscretizeALTURA)
+            line = normalization.discretizeAtribute(line, indexClassIMC, classDiscretizeIMC)
+            line = normalization.discretizeAtribute(line, indexClassIDADE, classDiscretizeIDADE)
+            line = normalization.discretizeAtribute(line, indexClassPAS, classDiscretizePAS)
+            line = normalization.discretizeAtribute(line, indexClassPAD, classDiscretizePAD)
+            line = normalization.discretizeAtribute(line, indexClassFC, classDiscretizeFC)
+
             '''
             line = normalization.normalizeattribute(line, indexClassFC, normalization.minValueNormalizationFC,
-                                                    normalization.maxValueNormalizationFC)     
-                                                       
-            line = normalization.normalizeattribute(line, indexClassIMC, normalization.minValueNormalizationIMC,
-                                                    normalization.maxValueNormalizationIMC)
-
-            line = normalization.normalizeattribute(line, indexClassIDADE, normalization.minValueNormalizationIDADE,
-                                                    normalization.maxValueNormalizationIDADE)            
-
-            line = normalization.normalizeattribute(line, indexClassALTURA, normalization.minValueNormalizationALTURA,
-                                                    normalization.maxValueNormalizationALTURA)
+                                                    normalization.maxValueNormalizationFC)                                                            
             '''
 
-            if removeAttributeAgeOutOfRange:
-                if line[indexClassIDADE] != '':
-                    if minValueAge < line[indexClassIDADE] <= maxValueAge:
-                        writerCSV.writerow(line)
-            else:
-                writerCSV.writerow(line)
+        writerCSV.writerow(line)
