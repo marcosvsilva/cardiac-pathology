@@ -1,5 +1,6 @@
 from unicodedata import normalize
 from dateutil import parser
+from DataSetNormalization.DefsNormalizationPPA import DefsNormalizationPPA
 
 # Atributes DataSet
 attributesDataSet = {'ID': 0, 'PESO': 1, 'ALTURA': 2, 'IMC': 3, 'ATENDIMENTO': 4, 'ANIVERSARIO': 5, 'IDADE': 6,
@@ -9,7 +10,6 @@ attributesDataSet = {'ID': 0, 'PESO': 1, 'ALTURA': 2, 'IMC': 3, 'ATENDIMENTO': 4
 convertHeightMTOCM = 100
 
 missingValue = ''
-
 
 def getAttributesDataSet():
     return attributesDataSet
@@ -143,6 +143,9 @@ class DefsNormalization:
     maxValueNormalizationALTURA = 0
     minValueNormalizationALTURA = 0
 
+    # class of normalization PPA
+    normalizationPPA = None
+
     def __init__(self, maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight, attributesRemove,
                  missingValuesGenere, maxValueToConversionHeight, removeAttributeAgeOutOfRange):
@@ -168,6 +171,9 @@ class DefsNormalization:
         self.minValueNormalizationIMC = maxValueIMC
         self.minValueNormalizationIDADE = maxValueAge
         self.minValueNormalizationALTURA = maxValueHeight
+
+        # class of normalization PPA
+        self.normalizationPPA = DefsNormalizationPPA(minValuePA, minValuePA)
 
     def removeExpendableAttribute(self, line):
         for index in self.attributesRemove:
@@ -248,10 +254,9 @@ class DefsNormalization:
 
     def processPAS(self, line):
         if line[attributesDataSet['PASISTOLICA']] != 'PA SISTOLICA':
-            try:
+            pas = -1
+            if line[attributesDataSet['PASISTOLICA']] != missingValue:
                 pas = int(line[attributesDataSet['PASISTOLICA']])
-            except ValueError:
-                pas = 0
 
             if self.minValuePA <= pas < self.maxValuePA:
                 line[attributesDataSet['PASISTOLICA']] = pas
@@ -262,10 +267,9 @@ class DefsNormalization:
 
     def processPAD(self, line):
         if line[attributesDataSet['PADIASTOLICA']] != 'PA DIASTOLICA':
-            try:
+            pad = -1
+            if line[attributesDataSet['PADIASTOLICA']] != missingValue:
                 pad = int(line[attributesDataSet['PADIASTOLICA']])
-            except ValueError:
-                pad = 0
 
             if self.minValuePA <= pad < self.maxValuePA:
                 line[attributesDataSet['PADIASTOLICA']] = pad
@@ -276,10 +280,35 @@ class DefsNormalization:
 
     def processPPA(self, line):
         if line[attributesDataSet['PPA']] != 'PPA':
-            line = self.processPAD(line)
             line = self.processPAS(line)
+            line = self.processPAD(line)
 
-            line[attributesDataSet['PPA']] = checkPPA(line[attributesDataSet['PPA']])
+            genere = missingValue
+            if line[attributesDataSet['SEXO']] != missingValue:
+                genere = line[attributesDataSet['SEXO']]
+
+            age = 0
+            if line[attributesDataSet['IDADE']] != missingValue:
+                age = int(line[attributesDataSet['IDADE']])
+
+            height = 0
+            if line[attributesDataSet['ALTURA']] != missingValue:
+                height = int(line[attributesDataSet['ALTURA']])
+
+            pas = 0
+            if line[attributesDataSet['PASISTOLICA']] != missingValue:
+                pas = int(line[attributesDataSet['PASISTOLICA']])
+
+            pad = 0
+            if line[attributesDataSet['PADIASTOLICA']] != missingValue:
+                pad = int(line[attributesDataSet['PADIASTOLICA']])
+
+            result = self.normalizationPPA.ppaCalculate(genere, age, height, pas, pad)
+
+            if result == missingValue:
+                result = checkPPA(line[attributesDataSet['PPA']])
+
+            line[attributesDataSet['PPA']] = result
         return line
 
     def processPESO(self, line):
@@ -390,6 +419,24 @@ class DefsNormalization:
 
         return line
 
+    def mergeMOTIVOS(self, line, indexAttributeMOTIVO1, indexAttributeMOTIVO2):
+        if (indexAttributeMOTIVO1 > -1) and (indexAttributeMOTIVO2 > -1):
+            reason1 = str(line[indexAttributeMOTIVO1])
+            reason2 = str(line[indexAttributeMOTIVO2])
+
+            if reason1 != missingValue and reason2 != missingValue:
+                if reason1 == 'MOTIVO1':
+                    line[indexAttributeMOTIVO1] = 'MOTIVO'
+                else:
+                    if reason2 != missingValue:
+                        line[indexAttributeMOTIVO1] = reason2
+
+                    if line[indexAttributeMOTIVO1] in ['07 - OUTRO']:
+                        line[indexAttributeMOTIVO1] = 'OUTRO'
+
+        line.pop(indexAttributeMOTIVO2)
+        return line
+
     def normalizeattribute(self, line, indexAttribute, minAttribute, maxAttribute):
         valueAttribute = line[indexAttribute]
 
@@ -418,8 +465,9 @@ class DefsNormalization:
                         maxValue = float(valuesInterval[1])
 
                         if minValue <= value < maxValue:
-                            line[indexAttribute] = 'Class[' + str(valuesInterval[0]) + ',' + str(valuesInterval[1]) + ')'
+                            line[indexAttribute] = 'Class[' + str(valuesInterval[0]) + ',' + str(
+                                valuesInterval[1]) + ')'
 
             return line
         except ValueError:
-            line = 'FAIL OF DISCRETIZE INDEX ' + indexAttribute
+            line = 'FAIL OF DISCRETIZE INDEX ' + str(indexAttribute)

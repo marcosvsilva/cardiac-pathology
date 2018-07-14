@@ -8,8 +8,8 @@ from DataSetNormalization.DefsNormalization import DefsNormalization, getAttribu
 maxValueFC = 200
 minValueFC = 40
 
-maxValuePA = 200
-minValuePA = 50
+maxValuePA = 900
+minValuePA = 0
 
 maxValueIMC = 60.0
 minValueIMC = 1.0
@@ -65,6 +65,7 @@ if os.path.isfile(dataSetCSVOutput):
 
 # Document content CSV original processed
 processedDocument = []
+normalizeDocument = []
 
 # Read Original DataSet exections functions normalization write DataSet Ouput
 normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
@@ -72,13 +73,14 @@ normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA
                                   attributesRemove, missingValuesGenere, maxValueToConversionHeight,
                                   removeAttributeAgeOutOfRange)
 
-# Processed document
+# Read and processed original document
 firstLine = True
 indexInterestClass = 0
 with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
     readerCSV = csv.reader(csvReaderFile)
 
     for row in readerCSV:
+
         if row[attributesDataSet['NORMALXANORMAL']] != '':
             line = normalization.replaceInvalidInterestArguments(row)
             line = normalization.replaceAccentuationAndUpperCase(line)
@@ -105,7 +107,7 @@ with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
                 line = normalization.moveLastPositionClass(line, indexInterestClass)
                 processedDocument.append(line)
 
-#  Process and normalize attributes
+#  Discretize, normalize and merge attributes
 firstLine = True
 indexClassPESO = -1
 indexClassALTURA = -1
@@ -114,6 +116,8 @@ indexClassIDADE = -1
 indexClassPAS = -1
 indexClassPAD = -1
 indexClassFC = -1
+indexClassMOTIVO1 = -1
+indexClassMOTIVO2 = -1
 with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
     writerCSV = csv.writer(csvWriterFile)
 
@@ -126,6 +130,11 @@ with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
             indexClassPAS = getIndexAttributeClass(line, 'PA SISTOLICA')
             indexClassPAD = getIndexAttributeClass(line, 'PA DIASTOLICA')
             indexClassFC = getIndexAttributeClass(line, 'FC')
+            indexClassMOTIVO1 = getIndexAttributeClass(line, 'MOTIVO1')
+            indexClassMOTIVO2 = getIndexAttributeClass(line, 'MOTIVO2')
+
+            line = normalization.mergeMOTIVOS(line, indexClassMOTIVO1, indexClassMOTIVO2)  # remove title MOTIVO2
+
             firstLine = False
         else:
             line = normalization.discretizeAtribute(line, indexClassPESO, classDiscretizePESO)
@@ -135,6 +144,8 @@ with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
             line = normalization.discretizeAtribute(line, indexClassPAS, classDiscretizePAS)
             line = normalization.discretizeAtribute(line, indexClassPAD, classDiscretizePAD)
             line = normalization.discretizeAtribute(line, indexClassFC, classDiscretizeFC)
+
+            line = normalization.mergeMOTIVOS(line, indexClassMOTIVO1, indexClassMOTIVO2)
 
             '''
             line = normalization.normalizeattribute(line, indexClassFC, normalization.minValueNormalizationFC,
