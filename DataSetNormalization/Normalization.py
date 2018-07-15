@@ -40,6 +40,7 @@ removeAttributeAgeOutOfRange = True  # Removes any record that has the age outsi
 attributesDataSet = getAttributesDataSet()
 
 attributesRemove.append(attributesDataSet['HDA2'])
+attributesRemove.append(attributesDataSet['PPA'])
 attributesRemove.append(attributesDataSet['CONVERNIO'])
 attributesRemove.append(attributesDataSet['ANIVERSARIO'])
 attributesRemove.append(attributesDataSet['ATENDIMENTO'])
