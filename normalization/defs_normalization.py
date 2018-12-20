@@ -1,44 +1,30 @@
 from unicodedata import normalize
 from dateutil import parser
-from DataSetNormalization.DefsNormalizationPPA import DefsNormalizationPPA
+from defs_normalization_ppa import DefsNormalizationPPA
 
 # Atributes DataSet
-attributesDataSet = {'ID': 0, 'PESO': 1, 'ALTURA': 2, 'IMC': 3, 'ATENDIMENTO': 4, 'ANIVERSARIO': 5, 'IDADE': 6,
-                     'CONVERNIO': 7, 'PULSO': 8, 'PASISTOLICA': 9, 'PADIASTOLICA': 10, 'PPA': 11, 'NORMALXANORMAL': 12,
-                     'B2': 13, 'SOPRO': 14, 'FC': 15, 'HDA1': 16, 'HDA2': 17, 'SEXO': 18, 'REASON1': 19, 'REASON2': 20}
+attributes = {'ID': 0, 'PESO': 1, 'ALTURA': 2, 'IMC': 3, 'ATENDIMENTO': 4, 'ANIVERSARIO': 5, 'IDADE': 6,
+              'CONVERNIO': 7, 'PULSO': 8, 'PASISTOLICA': 9, 'PADIASTOLICA': 10, 'PPA': 11, 'NORMALXANORMAL': 12,
+              'B2': 13, 'SOPRO': 14, 'FC': 15, 'HDA1': 16, 'HDA2': 17, 'SEXO': 18, 'REASON1': 19, 'REASON2': 20}
 
-convertHeightMTOCM = 100
+convert_height_to_cm = 100
 
-missingValue = ''
-
-
-def getAttributesDataSet():
-    return attributesDataSet
+missing_value = ''
 
 
-def getIndexAttributeClass(line, attribute):
-    index = -1
-    for i in range(len(line)):
-        if line[i] == attribute:
-            index = i
-            break
-    return index
-
-
-def calculateAge(attendance, birthday):
-    age = -1
+def calculate_age(attendance, birthday):
     try:
         age = attendance.year - birthday.year
-        monthVeri = attendance.month - birthday.month
-        dateVeri = attendance.day - birthday.day
+        month = attendance.month - birthday.month
+        date = attendance.day - birthday.day
 
         age = int(age)
-        monthVeri = int(monthVeri)
-        dateVeri = int(dateVeri)
+        month = int(month)
+        date = int(date)
 
-        if monthVeri < 0:
+        if month < 0:
             age = age - 1
-        elif dateVeri < 0 and monthVeri == 0:
+        elif date < 0 and month == 0:
             age = age - 1
     except ValueError:
         age = -1
@@ -46,13 +32,13 @@ def calculateAge(attendance, birthday):
     return age
 
 
-def checkImc(imc, maxValueIMC, minValueIMC):
+def check_imc(imc, max_value, min_value):
     try:
         imc = float(imc)
-        maxValue = float(maxValueIMC)
-        minValue = float(minValueIMC)
+        max_value = float(max_value)
+        min_value = float(min_value)
 
-        if minValue <= imc <= maxValue:
+        if min_value <= imc <= max_value:
             imc = round(imc, 2)
         else:
             imc = -1
@@ -63,344 +49,369 @@ def checkImc(imc, maxValueIMC, minValueIMC):
     return imc
 
 
-def checkPPA(ppa):
-    ppaNew = missingValue
+def check_ppa(ppa):
+    ppa_new = missing_value
     if ppa != '':
         if ppa in ['NORMAL']:
-            ppaNew = 'NORMAL'
+            ppa_new = 'NORMAL'
 
         if ppa in ['PRE-HIPERTENSAO PAS', 'PRE-HIPERTENSAO PAD', 'HAS-1 PAS', 'HAS-1 PAD', 'HAS-3 PAS', 'HAS-3 PAD']:
-            ppaNew = 'HAS'
+            ppa_new = 'HAS'
 
-    return ppaNew
+    return ppa_new
 
 
-def replaceInvalidInterestArgumentsRecursive(line):
+def replace_invalid_interest_arguments_recursive(line):
     if '#VALUE!' in line:
         index = line.index('#VALUE!')
-        line[index] = missingValue
-        replaceInvalidInterestArgumentsRecursive(line)
+        line[index] = missing_value
+        replace_invalid_interest_arguments_recursive(line)
 
     if ',' in line:
         index = line.index(',')
         line[index] = '.'
-        replaceInvalidInterestArgumentsRecursive(line)
+        replace_invalid_interest_arguments_recursive(line)
 
     return line
 
 
-def moveLastPositionClassRecursive(line, position):
+def move_last_position_class_recursive(line, position):
     if position == line.__len__() - 1:
         return line
     else:
         aux = line[position]
         line[position] = line[position + 1]
         line[position + 1] = aux
-        return moveLastPositionClassRecursive(line, position + 1)
+        return move_last_position_class_recursive(line, position + 1)
+
+
+class AttributesDataset:
+    def get_attributes_dataset():
+        return attributes
+
+
+class AttributesClass:
+    def get_index_attribute_class(line, attribute):
+        index = -1
+        for i in range(len(line)):
+            if line[i] == attribute:
+                index = i
+                break
+        return index
 
 
 class DefsNormalization:
     # values for processing
-    maxValueFC = 0
-    minValueFC = 0
-    maxValuePA = 0
-    minValuePA = 0
-    maxValueIMC = 0
-    minValueIMC = 0
-    maxValueAge = 0
-    minValueAge = 0
-    maxValueWeight = 0
-    minValueWeight = 0
-    maxValueHeight = 0
-    minValueHeight = 0
-    attributesRemove = []
-    missingValuesGenere = False
-    maxValueToConversionHeight = 0
-    removeAttributeAgeOutOfRange = False
+    max_value_fc = 0
+    min_value_fc = 0
+
+    max_value_pa = 0
+    min_value_pa = 0
+
+    max_value_imc = 0
+    min_value_imc = 0
+
+    max_value_age = 0
+    min_value_age = 0
+
+    max_value_weight = 0
+    min_value_weight = 0
+
+    max_value_height = 0
+    min_value_height = 0
+
+    attributes_remove = []
+    missing_values_genere = False
+    max_value_conversion_height = 0
+    remove_attribute_age_out_range = False
 
     # class of normalization PPA
-    normalizationPPA = None
+    normalization_ppa = None
 
-    def __init__(self, maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
-                 minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight, attributesRemove,
-                 missingValuesGenere, maxValueToConversionHeight, removeAttributeAgeOutOfRange):
-        self.maxValueFC = maxValueFC
-        self.minValueFC = minValueFC
-        self.maxValuePA = maxValuePA
-        self.minValuePA = minValuePA
-        self.maxValueIMC = maxValueIMC
-        self.minValueIMC = minValueIMC
-        self.maxValueAge = maxValueAge
-        self.minValueAge = minValueAge
-        self.maxValueWeight = maxValueWeight
-        self.minValueWeight = minValueWeight
-        self.maxValueHeight = maxValueHeight
-        self.minValueHeight = minValueHeight
-        self.attributesRemove = attributesRemove
-        self.missingValuesGenere = missingValuesGenere
-        self.maxValueToConversionHeight = maxValueToConversionHeight
-        self.removeAttributeAgeOutOfRange = removeAttributeAgeOutOfRange
+    def __init__(self, max_value_fc, min_value_fc, max_value_pa, min_value_pa, max_value_imc, min_value_imc,
+                 max_value_age, min_value_age, max_value_weight, min_value_weight, max_value_height, min_value_height,
+                 attributes_remove, missing_values_genere, max_value_conversion_height, remove_attribute_age_out_range):
+        self.max_value_fc = max_value_fc
+        self.min_value_fc = min_value_fc
+
+        self.max_value_pa = max_value_pa
+        self.min_value_pa = min_value_pa
+
+        self.max_value_imc = max_value_imc
+        self.min_value_imc = min_value_imc
+
+        self.max_value_age = max_value_age
+        self.min_value_age = min_value_age
+
+        self.max_value_weight = max_value_weight
+        self.min_value_weight = min_value_weight
+
+        self.max_value_height = max_value_height
+        self.min_value_height = min_value_height
+
+        self.attributes_remove = attributes_remove
+        self.missing_values_genere = missing_values_genere
+        self.max_value_conversion_height = max_value_conversion_height
+        self.remove_attribute_age_out_range = remove_attribute_age_out_range
 
         # class of normalization PPA
-        self.normalizationPPA = DefsNormalizationPPA(minValuePA, minValuePA)
+        self.normalization_ppa = DefsNormalizationPPA(min_value_pa, min_value_pa)
 
-    def removeExpendableAttribute(self, line):
-        for index in self.attributesRemove:
+    def remove_expendable_attribute(self, line):
+        for index in self.attributes_remove:
             line.pop(index)
         return line
 
-    def replaceInvalidInterestArguments(self, line):
-        return replaceInvalidInterestArgumentsRecursive(line)
+    def replace_invalid_interest_arguments(self, line):
+        return replace_invalid_interest_arguments_recursive(line)
 
-    def moveLastPositionClass(self, line, index):
-        return moveLastPositionClassRecursive(line, index)
+    def move_last_position_class(self, line, index):
+        return move_last_position_class_recursive(line, index)
 
-    def processNORMALXANORMAL(self, line):
-        if line[attributesDataSet['NORMALXANORMAL']] != 'NORMAL X ANORMAL':
-            if line[attributesDataSet['NORMALXANORMAL']] in ('NORMAL', 'NORMAIS'):
-                line[attributesDataSet['NORMALXANORMAL']] = 'NORMAL'
+    def process_normal_anormal(self, line):
+        if line[attributes['NORMALXANORMAL']] != 'NORMAL X ANORMAL':
+            if line[attributes['NORMALXANORMAL']] in ('NORMAL', 'NORMAIS'):
+                line[attributes['NORMALXANORMAL']] = 'NORMAL'
 
-            elif line[attributesDataSet['NORMALXANORMAL']] in ('ANORMAL'):
-                line[attributesDataSet['NORMALXANORMAL']] = 'ANORMAL'
+            elif line[attributes['NORMALXANORMAL']] in ('ANORMAL'):
+                line[attributes['NORMALXANORMAL']] = 'ANORMAL'
 
             else:
-                line[attributesDataSet['NORMALXANORMAL']] = missingValue
+                line[attributes['NORMALXANORMAL']] = missing_value
 
         return line
 
-    def replaceAccentuationAndUpperCase(self, line):
+    def replace_accentuation_upper(self, line):
         for i in range(len(line)):
             line[i] = normalize('NFKD', line[i]).encode('ASCII', 'ignore').decode('ASCII')
             line[i] = line[i].upper()
 
         return line
 
-    def processSEXO(self, line):
-        if line[attributesDataSet['SEXO']] != 'SEXO':
-            if line[attributesDataSet['SEXO']] in ('M', 'MASCULINO'):
-                line[attributesDataSet['SEXO']] = 'MASCULINO'
+    def process_sexo(self, line):
+        if line[attributes['SEXO']] != 'SEXO':
+            if line[attributes['SEXO']] in ('M', 'MASCULINO'):
+                line[attributes['SEXO']] = 'MASCULINO'
 
-            elif line[attributesDataSet['SEXO']] in ('F', 'FEMININO'):
-                line[attributesDataSet['SEXO']] = 'FEMININO'
+            elif line[attributes['SEXO']] in ('F', 'FEMININO'):
+                line[attributes['SEXO']] = 'FEMININO'
 
-            elif line[attributesDataSet['SEXO']] in ('INDETERMINADO'):
-                if self.missingValuesGenere:
-                    line[attributesDataSet['SEXO']] = missingValue
+            elif line[attributes['SEXO']] in ('INDETERMINADO'):
+                if self.missing_values_genere:
+                    line[attributes['SEXO']] = missing_value
                 else:
-                    line[attributesDataSet['SEXO']] = 'INDETERMINADO'
+                    line[attributes['SEXO']] = 'INDETERMINADO'
 
         return line
 
-    def processIDADE(self, line):
-        if line[attributesDataSet['IDADE']] != 'IDADE':
+    def process_idade(self, line):
+        if line[attributes['IDADE']] != 'IDADE':
             try:
-                attendance = parser.parse(line[attributesDataSet['ATENDIMENTO']])
+                attendance = parser.parse(line[attributes['ATENDIMENTO']])
             except ValueError:
                 attendance = None
 
             try:
-                birthday = parser.parse(line[attributesDataSet['ANIVERSARIO']])
+                birthday = parser.parse(line[attributes['ANIVERSARIO']])
             except ValueError:
                 birthday = None
 
             if (attendance is not None) and (birthday is not None):
-                age = calculateAge(attendance, birthday)
+                age = calculate_age(attendance, birthday)
 
-                if self.minValueAge <= age <= self.maxValueAge:
-                    line[attributesDataSet['IDADE']] = age
+                if self.min_value_age <= age <= self.max_value_age:
+                    line[attributes['IDADE']] = age
                 else:
-                    line[attributesDataSet['IDADE']] = missingValue
+                    line[attributes['IDADE']] = missing_value
             else:
-                line[attributesDataSet['IDADE']] = missingValue
+                line[attributes['IDADE']] = missing_value
 
         return line
 
-    def processPAS(self, line):
-        if line[attributesDataSet['PASISTOLICA']] != 'PA SISTOLICA':
+    def process_pas(self, line):
+        if line[attributes['PASISTOLICA']] != 'PA SISTOLICA':
             pas = -1
-            if line[attributesDataSet['PASISTOLICA']] != missingValue:
-                pas = int(line[attributesDataSet['PASISTOLICA']])
 
-            if self.minValuePA <= pas < self.maxValuePA:
-                line[attributesDataSet['PASISTOLICA']] = pas
+            if line[attributes['PASISTOLICA']] != missing_value:
+                pas = int(line[attributes['PASISTOLICA']])
+
+            if self.min_value_pa <= pas < self.max_value_pa:
+                line[attributes['PASISTOLICA']] = pas
             else:
-                line[attributesDataSet['PASISTOLICA']] = missingValue
+                line[attributes['PASISTOLICA']] = missing_value
 
         return line
 
-    def processPAD(self, line):
-        if line[attributesDataSet['PADIASTOLICA']] != 'PA DIASTOLICA':
+    def process_pad(self, line):
+        if line[attributes['PADIASTOLICA']] != 'PA DIASTOLICA':
             pad = -1
-            if line[attributesDataSet['PADIASTOLICA']] != missingValue:
-                pad = int(line[attributesDataSet['PADIASTOLICA']])
 
-            if self.minValuePA <= pad < self.maxValuePA:
-                line[attributesDataSet['PADIASTOLICA']] = pad
+            if line[attributes['PADIASTOLICA']] != missing_value:
+                pad = int(line[attributes['PADIASTOLICA']])
+
+            if self.min_value_pa <= pad < self.max_value_pa:
+                line[attributes['PADIASTOLICA']] = pad
             else:
-                line[attributesDataSet['PADIASTOLICA']] = missingValue
+                line[attributes['PADIASTOLICA']] = missing_value
 
         return line
 
-    def processPPA(self, line):
-        if line[attributesDataSet['PPA']] != 'PPA':
-            line = self.processPAS(line)
-            line = self.processPAD(line)
+    def process_ppa(self, line):
+        if line[attributes['PPA']] != 'PPA':
+            line = self.process_pas(line)
+            line = self.process_pad(line)
 
-            genere = missingValue
-            if line[attributesDataSet['SEXO']] != missingValue:
-                genere = line[attributesDataSet['SEXO']]
+            genere = missing_value
+            if line[attributes['SEXO']] != missing_value:
+                genere = line[attributes['SEXO']]
 
             age = 0
-            if line[attributesDataSet['IDADE']] != missingValue:
-                age = int(line[attributesDataSet['IDADE']])
+            if line[attributes['IDADE']] != missing_value:
+                age = int(line[attributes['IDADE']])
 
             height = 0
-            if line[attributesDataSet['ALTURA']] != missingValue:
-                height = int(line[attributesDataSet['ALTURA']])
+            if line[attributes['ALTURA']] != missing_value:
+                height = int(line[attributes['ALTURA']])
 
             pas = 0
-            if line[attributesDataSet['PASISTOLICA']] != missingValue:
-                pas = int(line[attributesDataSet['PASISTOLICA']])
+            if line[attributes['PASISTOLICA']] != missing_value:
+                pas = int(line[attributes['PASISTOLICA']])
 
             pad = 0
-            if line[attributesDataSet['PADIASTOLICA']] != missingValue:
-                pad = int(line[attributesDataSet['PADIASTOLICA']])
+            if line[attributes['PADIASTOLICA']] != missing_value:
+                pad = int(line[attributes['PADIASTOLICA']])
 
-            result = self.normalizationPPA.ppaCalculate(genere, age, height, pas, pad)
+            result = self.normalization_ppa.ppa_calculate(genere, age, height, pas, pad)
 
-            if result == missingValue:
-                result = checkPPA(line[attributesDataSet['PPA']])
+            if result == missing_value:
+                result = check_ppa(line[attributes['PPA']])
 
-            line[attributesDataSet['PPA']] = result
+            line[attributes['PPA']] = result
         return line
 
-    def processPESO(self, line):
-        if line[attributesDataSet['PESO']] != 'PESO':
-            if line[attributesDataSet['PESO']] != missingValue:
+    def process_peso(self, line):
+        if line[attributes['PESO']] != 'PESO':
+            if line[attributes['PESO']] != missing_value:
                 try:
-                    weight = float(line[attributesDataSet['PESO']])
+                    weight = float(line[attributes['PESO']])
 
-                    if self.minValueWeight <= weight <= self.maxValueWeight:
-                        line[attributesDataSet['PESO']] = weight
+                    if self.min_value_height <= weight <= self.max_value_weight:
+                        line[attributes['PESO']] = weight
                     else:
-                        line[attributesDataSet['PESO']] = missingValue
+                        line[attributes['PESO']] = missing_value
 
                 except ValueError:
-                    line[attributesDataSet['PESO']] = missingValue
+                    line[attributes['PESO']] = missing_value
 
         return line
 
-    def processALTURA(self, line):
-        if line[attributesDataSet['ALTURA']] != 'ALTURA':
-            height = 0
+    def process_altura(self, line):
+        if line[attributes['ALTURA']] != 'ALTURA':
             try:
-                if line[attributesDataSet['ALTURA']] != '':
-                    heightAux = int(line[attributesDataSet['ALTURA']])
+                if line[attributes['ALTURA']] != '':
+                    height_aux = int(line[attributes['ALTURA']])
 
-                    if self.minValueHeight <= heightAux <= self.maxValueHeight:
-                        height = heightAux
-                        line[attributesDataSet['ALTURA']] = height
+                    if self.min_value_height <= height_aux <= self.max_value_height:
+                        height = height_aux
+                        line[attributes['ALTURA']] = height
                     else:
-                        line[attributesDataSet['ALTURA']] = missingValue
+                        line[attributes['ALTURA']] = missing_value
 
             except ValueError:
-                line[attributesDataSet['ALTURA']] = missingValue
-                height = 0
+                line[attributes['ALTURA']] = missing_value
 
         return line
 
-    def processIMC(self, line):
-        if line[attributesDataSet['IMC']] != 'IMC':
+    def process_imc(self, line):
+        if line[attributes['IMC']] != 'IMC':
             try:
-                line = self.processALTURA(line)
-                height = float(line[attributesDataSet['ALTURA']])
+                line = self.process_altura(line)
+                height = float(line[attributes['ALTURA']])
             except ValueError:
                 height = 0
 
             try:
-                line = self.processPESO(line)
-                weight = float(line[attributesDataSet['PESO']])
+                line = self.process_peso(line)
+                weight = float(line[attributes['PESO']])
             except ValueError:
                 weight = 0
 
-            imc = -1
             if (height > 0) and (weight > 0):
-                if height > self.maxValueToConversionHeight:
-                    height = height / convertHeightMTOCM
+                if height > self.max_value_conversion_height:
+                    height = height / convert_height_to_cm
 
                 imc = weight / (height * height)
-                imc = checkImc(imc, self.maxValueIMC, self.minValueIMC)
+                imc = check_imc(imc, self.max_value_imc, self.min_value_imc)
 
                 if imc > 0:
-                    line[attributesDataSet['IMC']] = imc
+                    line[attributes['IMC']] = imc
                 else:
-                    line[attributesDataSet['IMC']] = missingValue
+                    line[attributes['IMC']] = missing_value
 
-            elif line[attributesDataSet['IMC']] != missingValue:
-                imc = checkImc(line[attributesDataSet['IMC']], self.maxValueIMC, self.minValueIMC)
+            elif line[attributes['IMC']] != missing_value:
+                imc = check_imc(line[attributes['IMC']], self.max_value_imc, self.min_value_imc)
 
                 if imc > 0:
-                    line[attributesDataSet['IMC']] = imc
+                    line[attributes['IMC']] = imc
                 else:
-                    line[attributesDataSet['IMC']] = missingValue
+                    line[attributes['IMC']] = missing_value
 
         return line
 
-    def processFC(self, line):
-        if line[attributesDataSet['FC']] != 'FC':
-            if line[attributesDataSet['FC']] != '':
+    def process_fc(self, line):
+        if line[attributes['FC']] != 'FC':
+            if line[attributes['FC']] != '':
                 try:
-                    intFC = int(line[attributesDataSet['FC']])
+                    int_fc = int(line[attributes['FC']])
 
-                    if self.minValueFC <= intFC <= self.maxValueFC:
-                        line[attributesDataSet['FC']] = intFC
+                    if self.min_value_fc <= int_fc <= self.max_value_fc:
+                        line[attributes['FC']] = int_fc
                     else:
-                        line[attributesDataSet['FC']] = missingValue
+                        line[attributes['FC']] = missing_value
 
                 except ValueError:
-                    line[attributesDataSet['FC']] = missingValue
+                    line[attributes['FC']] = missing_value
 
         return line
 
-    def mergeMOTIVOS(self, line, indexAttributeMOTIVO1, indexAttributeMOTIVO2):
-        if (indexAttributeMOTIVO1 > -1) and (indexAttributeMOTIVO2 > -1):
-            reason1 = str(line[indexAttributeMOTIVO1])
-            reason2 = str(line[indexAttributeMOTIVO2])
+    def merge_motivos(self, line, index_attribute_motivo1, index_attribute_motivo2):
+        if (index_attribute_motivo1 > -1) and (index_attribute_motivo2 > -1):
+            reason1 = str(line[index_attribute_motivo1])
+            reason2 = str(line[index_attribute_motivo2])
 
-            if reason1 != missingValue and reason2 != missingValue:
+            if reason1 != missing_value and reason2 != missing_value:
                 if reason1 == 'MOTIVO1':
-                    line[indexAttributeMOTIVO1] = 'MOTIVO'
+                    line[index_attribute_motivo1] = 'MOTIVO'
                 else:
-                    if reason2 != missingValue:
-                        line[indexAttributeMOTIVO1] = reason2
+                    if reason2 != missing_value:
+                        line[index_attribute_motivo1] = reason2
 
-                    if line[indexAttributeMOTIVO1] in ['07 - OUTRO']:
-                        line[indexAttributeMOTIVO1] = 'OUTRO'
+                    if line[index_attribute_motivo1] in ['07 - OUTRO']:
+                        line[index_attribute_motivo1] = 'OUTRO'
 
-        line.pop(indexAttributeMOTIVO2)
+        line.pop(index_attribute_motivo2)
         return line
 
-    def validAgeValid(self, line):
+    def valid_age(self, line):
         result = True
-        if self.removeAttributeAgeOutOfRange:
-            if line[attributesDataSet['IDADE']] != 'IDADE':
-                result = not (line[attributesDataSet['IDADE']] == missingValue)
+        if self.remove_attribute_age_out_range:
+            if line[attributes['IDADE']] != 'IDADE':
+                result = not (line[attributes['IDADE']] == missing_value)
         return result
 
-    def discretizeAtribute(self, line, indexAttribute, interval):
+    def discretize_atribute(self, line, index, interval):
         try:
-            if indexAttribute >= 0:
-                if line[indexAttribute] != '':
-                    value = float(line[indexAttribute])
+            if index >= 0:
+                if line[index] != '':
+                    value = float(line[index])
 
-                    for valuesInterval in interval:
-                        minValue = float(valuesInterval[0])
-                        maxValue = float(valuesInterval[1])
+                    for values_interval in interval:
+                        min_value = float(values_interval[0])
+                        max_value = float(values_interval[1])
 
-                        if minValue <= value < maxValue:
-                            line[indexAttribute] = 'Class[' + str(valuesInterval[0]) + ',' + str(
-                                valuesInterval[1]) + ')'
+                        if min_value <= value < max_value:
+                            line[index] = 'Class[' + str(values_interval[0]) + ',' + str(values_interval[1]) + ')'
 
             return line
         except ValueError:
-            line = 'FAIL OF DISCRETIZE INDEX ' + str(indexAttribute)
+            line = 'FAIL OF DISCRETIZE INDEX ' + str(index)

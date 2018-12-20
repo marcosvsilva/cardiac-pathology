@@ -1,145 +1,159 @@
 import csv
 import os
-from DataSetNormalization.DefsNormalization import DefsNormalization, getAttributesDataSet, getIndexAttributeClass
+from defs_normalization import DefsNormalization, AttributesDataset, AttributesClass
 
 # Moldable Parameters for Data Normalization
-
 # Max and min values for attributes
-maxValueFC = 250
-minValueFC = 40
+max_value_fc = 250
+min_value_fc = 40
 
-maxValuePA = 250
-minValuePA = 40
+max_value_pa = 250
+min_value_pa = 40
 
-maxValueIMC = 60.0
-minValueIMC = 1.0
+max_value_imc = 60.0
+min_value_imc = 1.0
 
-maxValueAge = 18
-minValueAge = 0
+max_value_age = 18
+min_value_age = 0
 
-maxValueWeight = 500.0
-minValueWeight = 0.1
+max_value_weight = 500.0
+min_value_weight = 0.1
 
-maxValueHeight = 350
-minValueHeight = 1
+max_value_height = 350
+min_value_height = 1
 
-classDiscretizePESO = [[0, 35], [35, 70], [70, 105], [105, 140], [140, 175]]
-classDiscretizeALTURA = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
-classDiscretizeIMC = [[0, 12], [12, 24], [24, 36], [36, 48], [48, 60]]
-classDiscretizeIDADE = [[0, 4], [4, 8], [8, 12], [12, 16], [16, 20]]
-classDiscretizePAS = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
-classDiscretizePAD = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
-classDiscretizeFC = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
-
-attributesRemove = []  # Remove attributes unnecessary from dataset
-missingValuesGenere = True  # Replaces the UNDEFINED genders with missing values
-maxValueToConversionHeight = 4  # Maximum value to express height in meters, so that no conversion is required
-removeAttributeAgeOutOfRange = True  # Removes any record that has the age outside the minimum and maximum range
+# Max and min values for discretize (group-by)
+class_discretize_peso = [[0, 35], [35, 70], [70, 105], [105, 140], [140, 175]]
+class_discretize_altura = [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200]]
+class_discretize_imc = [[0, 12], [12, 24], [24, 36], [36, 48], [48, 60]]
+class_discretize_idade = [[0, 4], [4, 8], [8, 12], [12, 16], [16, 20]]
+class_discretize_pas = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
+class_discretize_pad = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
+class_discretize_fc = [[0, 50], [50, 100], [100, 150], [150, 200], [200, 250]]
 
 # Remove attributes unnecessary from dataset
-attributesDataSet = getAttributesDataSet()
+attributes_remove = []
 
-attributesRemove.append(attributesDataSet['HDA2'])
-attributesRemove.append(attributesDataSet['PPA'])
-attributesRemove.append(attributesDataSet['CONVERNIO'])
-attributesRemove.append(attributesDataSet['ANIVERSARIO'])
-attributesRemove.append(attributesDataSet['ATENDIMENTO'])
-attributesRemove.append(attributesDataSet['ID'])
+# Replaces the UNDEFINED genders with missing values
+missing_values_genere = True
+
+# Maximum value to express height in meters, so that no conversion is required
+max_value_to_conversion_height = 4
+
+# Removes any record that has the age outside the minimum and maximum range
+remove_attribute_age_out_range = True
 
 # Directory containing the original dataset in csv UTF-8
-dataSetCSVDirectory = '../DataSet/'
+dataset_csv_directory = '../DataSet/'
 
 # Original dataset in csv UTF-8
-dataSetCSVInput = dataSetCSVDirectory + 'DataSetOriginal.csv'
+dataset_csv_input = dataset_csv_directory + 'dataset_original.csv'
 
 # Normalized dataset output
-dataSetCSVOutput = dataSetCSVDirectory + 'DataSetNormalization.csv'
+dataset_csv_output = dataset_csv_directory + 'dataset_normalization.csv'
 
 # Removes output dataset before execution
-if os.path.isfile(dataSetCSVOutput):
-    os.remove(dataSetCSVOutput)
+if os.path.isfile(dataset_csv_output):
+    os.remove(dataset_csv_output)
 
 # Document content CSV original processed
-processedDocument = []
-normalizeDocument = []
+processed_document = []
+normalize_document = []
+
+# Class of index fields
+attributes_dataset = AttributesDataset
+attributes_class = AttributesClass
+
+# Remove attributes unnecessary from dataset
+attributes_dataset = attributes_dataset.get_attributes_dataset()
+
+# Attributes to be removed
+attributes_remove.append(attributes_dataset['HDA2'])
+attributes_remove.append(attributes_dataset['PPA'])
+attributes_remove.append(attributes_dataset['CONVERNIO'])
+attributes_remove.append(attributes_dataset['ANIVERSARIO'])
+attributes_remove.append(attributes_dataset['ATENDIMENTO'])
+attributes_remove.append(attributes_dataset['ID'])
 
 # Read Original DataSet exections functions normalization write DataSet Ouput
-normalization = DefsNormalization(maxValueFC, minValueFC, maxValuePA, minValuePA, maxValueIMC, minValueIMC, maxValueAge,
-                                  minValueAge, maxValueWeight, minValueWeight, maxValueHeight, minValueHeight,
-                                  attributesRemove, missingValuesGenere, maxValueToConversionHeight,
-                                  removeAttributeAgeOutOfRange)
+normalization = DefsNormalization(max_value_fc, min_value_fc, max_value_pa, min_value_pa, max_value_imc, min_value_imc,
+                                  max_value_age, min_value_age, max_value_weight, min_value_weight, max_value_height,
+                                  min_value_height, attributes_remove, missing_values_genere,
+                                  max_value_to_conversion_height, remove_attribute_age_out_range)
 
 # Read and processed original document
-firstLine = True
-indexInterestClass = 0
-with open(dataSetCSVInput, newline='', encoding='utf-8') as csvReaderFile:
-    readerCSV = csv.reader(csvReaderFile)
+first_line = True
+index_interest_class = 0
+with open(dataset_csv_input, newline='', encoding='utf-8') as reader_csv:
+    reader = csv.reader(reader_csv)
 
-    for row in readerCSV:
-        if row[attributesDataSet['NORMALXANORMAL']] != '':
-            line = normalization.replaceInvalidInterestArguments(row)
-            line = normalization.replaceAccentuationAndUpperCase(line)
+    for row in reader:
+        if row[attributes_dataset['NORMALXANORMAL']] != '':
+            line = normalization.replace_invalid_interest_arguments(row)
+            line = normalization.replace_accentuation_upper(line)
 
-            if not firstLine:
-                line = normalization.processNORMALXANORMAL(line)
-                line = normalization.processIDADE(line)
-                line = normalization.processSEXO(line)
-                line = normalization.processALTURA(line)
-                line = normalization.processPESO(line)
-                line = normalization.processIMC(line)
-                line = normalization.processFC(line)
-                line = normalization.processPAS(line)
-                line = normalization.processPAD(line)
-                line = normalization.processPPA(line)
+            if not first_line:
+                line = normalization.process_normal_anormal(line)
+                line = normalization.process_idade(line)
+                line = normalization.process_sexo(line)
+                line = normalization.process_altura(line)
+                line = normalization.process_peso(line)
+                line = normalization.process_imc(line)
+                line = normalization.process_fc(line)
+                line = normalization.process_pas(line)
+                line = normalization.process_pad(line)
+                line = normalization.process_ppa(line)
 
-            if normalization.validAgeValid(line):
-                line = normalization.removeExpendableAttribute(line)
+            if normalization.valid_age(line):
+                line = normalization.remove_expendable_attribute(line)
 
-                if firstLine:
-                    indexInterestClass = getIndexAttributeClass(line, 'NORMAL X ANORMAL')
-                    firstLine = False
+                if first_line:
+                    index_interest_class = attributes_class.get_index_attribute_class(line, 'NORMAL X ANORMAL')
+                    first_line = False
 
-                line = normalization.moveLastPositionClass(line, indexInterestClass)
-                processedDocument.append(line)
+                line = normalization.move_last_position_class(line, index_interest_class)
+                processed_document.append(line)
 
 #  Discretize, and merge attributes
-firstLine = True
-indexClassPESO = -1
-indexClassALTURA = -1
-indexClassIMC = -1
-indexClassIDADE = -1
-indexClassPAS = -1
-indexClassPAD = -1
-indexClassFC = -1
-indexClassMOTIVO1 = -1
-indexClassMOTIVO2 = -1
-with open(dataSetCSVOutput, 'w', newline='', encoding='utf-8') as csvWriterFile:
+first_line = True
+index_class_peso = -1
+index_class_altura = -1
+index_class_imc = -1
+index_class_idade = -1
+index_class_pas = -1
+index_class_pad = -1
+index_class_fc = -1
+index_class_motivo1 = -1
+index_class_motivo2 = -1
+
+
+with open(dataset_csv_output, 'w', newline='', encoding='utf-8') as csvWriterFile:
     writerCSV = csv.writer(csvWriterFile)
 
-    for line in processedDocument:
-        if firstLine:
-            indexClassPESO = getIndexAttributeClass(line, 'PESO')
-            indexClassALTURA = getIndexAttributeClass(line, 'ALTURA')
-            indexClassIMC = getIndexAttributeClass(line, 'IMC')
-            indexClassIDADE = getIndexAttributeClass(line, 'IDADE')
-            indexClassPAS = getIndexAttributeClass(line, 'PA SISTOLICA')
-            indexClassPAD = getIndexAttributeClass(line, 'PA DIASTOLICA')
-            indexClassFC = getIndexAttributeClass(line, 'FC')
-            indexClassMOTIVO1 = getIndexAttributeClass(line, 'MOTIVO1')
-            indexClassMOTIVO2 = getIndexAttributeClass(line, 'MOTIVO2')
+    for line in processed_document:
+        if first_line:
+            index_class_peso = attributes_class.get_index_attribute_class(line, 'PESO')
+            index_class_altura = attributes_class.get_index_attribute_class(line, 'ALTURA')
+            index_class_imc = attributes_class.get_index_attribute_class(line, 'IMC')
+            index_class_idade = attributes_class.get_index_attribute_class(line, 'IDADE')
+            index_class_pas = attributes_class.get_index_attribute_class(line, 'PA SISTOLICA')
+            index_class_pad = attributes_class.get_index_attribute_class(line, 'PA DIASTOLICA')
+            index_class_fc = attributes_class.get_index_attribute_class(line, 'FC')
+            index_class_motivo1 = attributes_class.get_index_attribute_class(line, 'MOTIVO1')
+            index_class_motivo2 = attributes_class.get_index_attribute_class(line, 'MOTIVO2')
 
-            line = normalization.mergeMOTIVOS(line, indexClassMOTIVO1, indexClassMOTIVO2)  # remove title MOTIVO2
+            line = normalization.merge_motivos(line, index_class_motivo1, index_class_motivo2)  # remove title MOTIVO2
 
-            firstLine = False
+            first_line = False
         else:
-            line = normalization.discretizeAtribute(line, indexClassPESO, classDiscretizePESO)
-            line = normalization.discretizeAtribute(line, indexClassALTURA, classDiscretizeALTURA)
-            line = normalization.discretizeAtribute(line, indexClassIMC, classDiscretizeIMC)
-            line = normalization.discretizeAtribute(line, indexClassIDADE, classDiscretizeIDADE)
-            line = normalization.discretizeAtribute(line, indexClassPAS, classDiscretizePAS)
-            line = normalization.discretizeAtribute(line, indexClassPAD, classDiscretizePAD)
-            line = normalization.discretizeAtribute(line, indexClassFC, classDiscretizeFC)
+            line = normalization.discretize_atribute(line, index_class_peso, class_discretize_peso)
+            line = normalization.discretize_atribute(line, index_class_altura, class_discretize_altura)
+            line = normalization.discretize_atribute(line, index_class_imc, class_discretize_imc)
+            line = normalization.discretize_atribute(line, index_class_idade, class_discretize_idade)
+            line = normalization.discretize_atribute(line, index_class_pas, class_discretize_pas)
+            line = normalization.discretize_atribute(line, index_class_pad, class_discretize_pad)
+            line = normalization.discretize_atribute(line, index_class_fc, class_discretize_fc)
 
-            line = normalization.mergeMOTIVOS(line, indexClassMOTIVO1, indexClassMOTIVO2)
+            line = normalization.merge_motivos(line, index_class_motivo1, index_class_motivo2)
 
         writerCSV.writerow(line)
