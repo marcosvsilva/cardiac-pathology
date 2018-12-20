@@ -10,7 +10,7 @@ The following is a description of the original data that was made available for 
 
 Which has the following characteristics.
 
-![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/images/finaly.jpeg "FinalDataSet")
+![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/images/original.png "Original")
 
 To better understand the proposal of the problem, [click here](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/docs/problem_description.pdf) to see the complete context
 
