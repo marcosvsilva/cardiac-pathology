@@ -6,16 +6,16 @@ The main goal of this work is to apply feature importance methods to rank variab
 
 The following is a description of the original data that was made available for the proposed solution.
 
-![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/Images/DataSet.png "OriginalData")
+![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/images/dataset.png "OriginalData")
 
 Which has the following characteristics.
 
-![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/Images/Finaly.jpeg "FinalDataSet")
+![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/images/finaly.jpeg "FinalDataSet")
 
-To better understand the proposal of the problem, [click here](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/Docs/ProblemDescription.pdf) to see the complete context
+To better understand the proposal of the problem, [click here](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/docs/problem_description.pdf) to see the complete context
 
 With numerous data processing, normalization and data cleansing, we were able to obtain a set of data with the following characteristics.
 
-![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/Images/Finaly.jpeg "FinalDataSet")
+![alt text](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/images/finaly.jpeg "FinalDataSet")
 
-This data model enabled us to achieve a predictive tree model, which obtained an accuracy of 93%, to better understand all the procedures performed, I suggest that you read the article of publication of the work in Portuguese that deals with all stages of processing and data mining. [Available here](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/Docs/SolutionProposalArticle.pdf).
+This data model enabled us to achieve a predictive tree model, which obtained an accuracy of 93%, to better understand all the procedures performed, I suggest that you read the article of publication of the work in Portuguese that deals with all stages of processing and data mining. [Available here](https://github.com/marcosvsilva/DataMiningCardiacPathology/blob/master/docs/solution_proposal_article.pdf).
