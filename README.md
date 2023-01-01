@@ -1,4 +1,4 @@
-# DataMiningCardiacPathology
+# cardiac-pathology
 ## Project for predicting cardiologic using data mining algorithms
 ### Data Mining: First Assignment Predicting Cardiac Pathology
 
